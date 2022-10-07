@@ -27,22 +27,33 @@ private:
 
 class OS_Scheduler_Simulator::Engine::Process {
 public:
-	static constexpr int CPU_BURST{ 1 };
-	static constexpr int IO_BURST{ 2 };
-
-	Process(std::string name, std::list<int> times);
-
-private:
 	struct event {
 		int time;
 		int type;
 	};
 
+	static constexpr int EMPTY{ 0 };
+	static constexpr int CPU_BURST{ 1 };
+	static constexpr int IO_BURST{ 2 };
+
+	Process(std::string name, std::list<int> times);
+
+	event get_current_event();
+	bool update_current_event(int time); // decreases the current event time left and returns true if that completes the event
+
+private:
 	std::string name;
 	std::list<struct event> events;
 };
 
-class OS_Scheduler_Simulator::Engine::Data_Time_Point {};
+class OS_Scheduler_Simulator::Engine::Data_Time_Point {
+public:
+
+private:
+	std::list<Process> ready_list;
+	std::list<Process> waiting_list;
+	Process current;
+};
 
 class OS_Scheduler_Simulator::Engine::Report_Resutls {
 	Report_Resutls(double cpu_u, double avg_t_w, double avg_t_tr, double avg_t_r);
