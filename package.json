@@ -1,0 +1,23 @@
+{
+  "name": "cpu-schedulers-simulator",
+  "version": "0.1.0",
+  "description": "Web CPU schedulers simulator.",
+  "scripts": {
+    "compile_web": "minify ./src/index.html > ./out/index.html && minify ./src/style.css > ./out/style.css",
+    "compile_cpp": "node ./scripts/build.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RARM/CPU-Schedulers-Simulator.git"
+  },
+  "author": "Rodolfo Andrés Rivas Matta",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/RARM/CPU-Schedulers-Simulator/issues"
+  },
+  "homepage": "https://github.com/RARM/CPU-Schedulers-Simulator#readme",
+  "private": true,
+  "devDependencies": {
+    "minify": "^9.1.0"
+  }
+}

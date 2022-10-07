@@ -1,0 +1,24 @@
+/**
+ * Table of Contents
+ *  0. Globals
+ *  1. Mobile
+ *  2. Tablet
+ *  3. Desktop
+**/
+
+/* 0. Globals */
+:root {
+    --some-color: red;
+}
+
+/* 1. Mobile */
+
+/* 2. Tablet */
+@media (min-width: 768px) {
+
+}
+
+/* 3. Desktop */
+@media (min-width: 992px) {
+
+}
