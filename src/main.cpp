@@ -8,7 +8,8 @@
 // std::list<OS_Scheduler_Simulator::Engine::Data_Time_Point> algorithm_FCFS(std::list<OS_Scheduler_Simulator::Engine::Process> data);
 
 #ifdef _DEBUG
-void test_routine();
+void test_basic_process_structures();
+void test_data_points();
 #endif // _DEBUG
 
 
@@ -16,14 +17,15 @@ int main(void) {
 
 #ifdef _DEBUG
     std::cout << "Running debugging version." << std::endl;
-    test_routine();
+    test_basic_process_structures();
+    test_data_points();
 #endif // DEBUG
 
     return 0;
 }
 
 #ifdef _DEBUG
-void test_routine() {
+void test_basic_process_structures() {
     // Creating four processes.
     std::list<OS_Scheduler_Simulator::Engine::Process_Data> processes;
 
@@ -72,5 +74,23 @@ void test_routine() {
     ready_list.pop_front();
 
     // Third breakpoint for debugging. INFO: Testing one iteration in a FCFS algorithm fashion.
+}
+
+void test_data_points() {
+    std::list<OS_Scheduler_Simulator::Engine::Process_Data> starting_list;
+
+    std::vector<unsigned> bursts = { 5, 8, 3 };
+    starting_list.push_back(OS_Scheduler_Simulator::Engine::Process_Data("P1", bursts));
+
+    bursts = { 4, 3, 5 };
+    starting_list.push_back(OS_Scheduler_Simulator::Engine::Process_Data("P2", bursts));
+
+    bursts = { 8, 1, 2 };
+    starting_list.push_back(OS_Scheduler_Simulator::Engine::Process_Data("P3", bursts));
+
+    bursts = { 3, 12, 4 };
+    starting_list.push_back(OS_Scheduler_Simulator::Engine::Process_Data("P4", bursts));
+
+    OS_Scheduler_Simulator::Engine::Data_Point data_point1(starting_list);
 }
 #endif // _DEBUG
