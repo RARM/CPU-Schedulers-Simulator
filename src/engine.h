@@ -78,23 +78,6 @@ private:
 	unsigned time_since_start;
 };
 
-class OS_Scheduler_Simulator::Engine::Simulation {
-public:
-	Simulation(std::span<Process_Data> processes);
-
-	Evaluator::results_table execute_algorithm(std::function<void(const std::vector<Process_Data>&, std::list<Data_Point>&)> algorithm);
-
-	Data_Point get_latest_data_point() { return this->timeline.back(); }
-	unsigned get_execution_time() { return this->timeline.back().get_time_since_start(); }
-
-	// FIXME: Add evaluator functions.
-
-private:
-	std::vector<Process_Data> processes;
-	std::list<Data_Point> timeline;
-	Evaluator evaluator;
-};
-
 class OS_Scheduler_Simulator::Engine::Evaluator {
 public:
 	typedef struct {
@@ -109,14 +92,32 @@ public:
 	Evaluator(std::list<Data_Point>* timeline = nullptr);
 
     void run_evaluation(std::list<Data_Point>* timeline = nullptr);
-	results_table get_overall_totals();
 	
+	results_table get_overall_totals() { return this->total_results; }
 	std::vector<Evaluator::Process> get_all_processes_data() { return this->processes_data; }
 
 private:
 	std::list<Data_Point>* timeline;
 	std::vector<Evaluator::Process> processes_data;
 	results_table total_results;
+};
+
+class OS_Scheduler_Simulator::Engine::Simulation {
+public:
+	Simulation(std::span<Process_Data> processes);
+
+	Evaluator::results_table execute_algorithm(std::function<void(const std::vector<Process_Data>&, std::list<Data_Point>&)> algorithm);
+
+	Data_Point get_latest_data_point() { return this->timeline.back(); }
+	unsigned get_execution_time() { return this->timeline.back().get_time_since_start(); }
+
+	Evaluator::results_table get_total_results() { return this->evaluator.get_overall_totals(); }
+	std::vector<Evaluator::Process> get_per_process_evaluation() { return this->evaluator.get_all_processes_data(); }
+
+private:
+	std::vector<Process_Data> processes;
+	std::list<Data_Point> timeline;
+	Evaluator evaluator;
 };
 
 class OS_Scheduler_Simulator::Engine::Evaluator::Process {
