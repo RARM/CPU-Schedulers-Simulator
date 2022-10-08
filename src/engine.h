@@ -106,9 +106,12 @@ public:
 	
 	class Process;
 
-	Evaluator(std::list<Data_Point>* timeline);
+	Evaluator(std::list<Data_Point>* timeline = nullptr);
 
-	// FIXME: Pending methods to be declared.
+    void run_evaluation(std::list<Data_Point>* timeline = nullptr);
+	results_table get_overall_totals();
+	
+	std::vector<Evaluator::Process> get_all_processes_data() { return this->processes_data; }
 
 private:
 	std::list<Data_Point>* timeline;
