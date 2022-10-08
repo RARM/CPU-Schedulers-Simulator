@@ -17,7 +17,6 @@ OS_Scheduler_Simulator::Engine::Process_Data::Process_Data(std::string name, std
 #ifdef _DEBUG
     if (operations_list.size() % 2 == 0) std::cerr << "Critial error: Process_Data for process \"" << name << "\" was initialized with even size amount of operations." << std::endl;
 #endif // _DEBUG
-
 }
 
 OS_Scheduler_Simulator::Engine::Running_Process::Running_Process(OS_Scheduler_Simulator::Engine::Process_Data* process) 
@@ -72,6 +71,41 @@ OS_Scheduler_Simulator::Engine::Running_Process OS_Scheduler_Simulator::Engine::
     }
 #endif // _DEBUG
 
-
     return new_process_data;
+}
+
+OS_Scheduler_Simulator::Engine::Data_Point::Data_Point(const std::list<Process_Data>& starting_list)
+    : ready_list(), waiting_list(),
+    running(OS_Scheduler_Simulator::Engine::Running_Process(nullptr)), time_since_start(0) {
+    for (Process_Data process : starting_list)
+        ready_list.push_back(Running_Process(&process));
+}
+
+OS_Scheduler_Simulator::Engine::Data_Point::Data_Point(unsigned time_since_start, const std::list<Running_Process>& waiting_list, const std::list<Running_Process>& ready_list, Running_Process running_process = nullptr)
+    : time_since_start(time_since_start), waiting_list(waiting_list), ready_list(ready_list), running(running_process) {}
+
+OS_Scheduler_Simulator::Engine::Data_Point::event OS_Scheduler_Simulator::Engine::Data_Point::get_next_event() {
+    unsigned shortest_time{ 0 };
+    event_type ev;
+
+    if (this->running.is_valid()) { 
+        shortest_time = this->running.time_to_end_current_burst();
+        ev = event_type::cpu;
+    }
+    
+    if (this->waiting_list.size() > 0)
+        for (Running_Process process : this->waiting_list) {
+            const unsigned time = process.time_to_end_current_burst();
+            if (time < shortest_time) {
+                shortest_time = time;
+                ev = event_type::io;
+            }
+        }
+
+    if (!this->running.is_valid() && this->waiting_list.size() == 0) ev = event_type::done;
+
+    return event{
+        .event_type = ev,
+        .time = shortest_time
+    };
 }

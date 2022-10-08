@@ -57,21 +57,23 @@ private:
 
 class OS_Scheduler_Simulator::Engine::Data_Point {
 public:
+	typedef enum { cpu, io, done } event_type;
+	
 	typedef struct {
-		enum { cpu, io } event_type;
+		event_type event_type;
 		unsigned time;
 	} event;
-	
-	Data_Point(const std::list<Running_Process>& starting_list);
+
+	Data_Point(const std::list<Process_Data>& starting_list);
 	Data_Point(unsigned time_since_start, const std::list<Running_Process>& waiting_list, const std::list<Running_Process>& ready_list, Running_Process running_process = nullptr);
 
 	event get_next_event();
-	bool is_cpu_busy() { return this->running.is_valid(); }
+	bool is_cpu_busy() const { return this->running.is_valid(); }
 	
-	Running_Process get_cpu_process() { return this->running; }
-	std::list<Running_Process> get_waiting_list() { return this->waiting_list; }
-	std::list<Running_Process> get_ready_list() { return this->ready_list; }
-	unsigned get_time_since_start() { return this->time_since_start; }
+	Running_Process get_cpu_process() const { return this->running; }
+	std::list<Running_Process> get_waiting_list() const { return this->waiting_list; }
+	std::list<Running_Process> get_ready_list() const { return this->ready_list; }
+	unsigned get_time_since_start() const { return this->time_since_start; }
 
 private:
 	std::list<Running_Process> ready_list;
