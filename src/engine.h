@@ -27,7 +27,7 @@ public:
 	
 	std::string get_name() const { return this->name; }
 	size_t get_operations_size() const { return this->operations.size(); }
-	unsigned get_operation(unsigned i) const { return this->operations.at(i); }
+	unsigned get_operation(size_t i) const { return this->operations.at(i); }
 
 private:
 	std::string name;
@@ -44,12 +44,14 @@ public:
 	unsigned time_to_end_current_burst() const;
 	
 	status_type get_status() const { return this->status; }
+	void send_to_ready() { this->status = status_type::ready; }
+	void send_to_cpu() { this->status = status_type::runnig; }
 	bool is_valid() const { return (this->process != nullptr) ? true : false; }
 	
 private:
 	Process_Data* process;
 	status_type status;
-	std::list<unsigned>::iterator current_operation;
+	size_t current_operation;
 	unsigned time_in_current_operation;
 };
 
