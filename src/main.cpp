@@ -17,7 +17,7 @@ int main(void) {
 
 #ifdef _DEBUG
     std::cout << "Running debugging version." << std::endl;
-    test_basic_process_structures();
+    // test_basic_process_structures();
     test_data_points();
 #endif // DEBUG
 
@@ -91,6 +91,71 @@ void test_data_points() {
     bursts = { 3, 12, 4 };
     starting_list.push_back(OS_Scheduler_Simulator::Engine::Process_Data("P4", bursts));
 
-    OS_Scheduler_Simulator::Engine::Data_Point data_point1(starting_list);
+    OS_Scheduler_Simulator::Engine::Data_Point* current_data_point = new OS_Scheduler_Simulator::Engine::Data_Point(starting_list);
+
+    // Breakpoint 1: Check if initial Data_Point is correct (everything is in the waiting_list).
+    
+    // Demonstration of a First Come First Serve algorithm.
+    std::list<OS_Scheduler_Simulator::Engine::Data_Point*> timeline;
+
+    std::list<OS_Scheduler_Simulator::Engine::Running_Process> waiting_list = current_data_point->get_waiting_list();
+    std::list<OS_Scheduler_Simulator::Engine::Running_Process> ready_list = current_data_point->get_ready_list();
+    OS_Scheduler_Simulator::Engine::Running_Process running = ready_list.front();
+    running.send_to_cpu();
+    ready_list.pop_front();
+
+    delete current_data_point;
+    current_data_point = new OS_Scheduler_Simulator::Engine::Data_Point(0, waiting_list, ready_list, running);
+
+    timeline.push_back(current_data_point);
+
+    while (!current_data_point->is_done()) {
+        ready_list = current_data_point->get_ready_list();
+        waiting_list = current_data_point->get_waiting_list();
+        running = current_data_point->get_cpu_process();
+
+        OS_Scheduler_Simulator::Engine::Data_Point::event next_event = current_data_point->get_next_event();
+        
+        // Running events.
+        if (running.is_valid()) running = running.get_next_process_state(next_event.time);
+        for (OS_Scheduler_Simulator::Engine::Running_Process& process : waiting_list) process = process.get_next_process_state(next_event.time);
+        
+        // Removing process from CPU if completed.
+        if (next_event.event_type == OS_Scheduler_Simulator::Engine::Data_Point::event_type::cpu) {
+            if (running.get_status() == OS_Scheduler_Simulator::Engine::Running_Process::status_type::waiting)
+                waiting_list.push_back(running); // It will be performing some IO operations now.
+
+            running = OS_Scheduler_Simulator::Engine::Running_Process(nullptr); // CPU open.
+        }
+
+        // Regardless of previous case, check if any I/O operations is completed.
+        for (std::list<OS_Scheduler_Simulator::Engine::Running_Process>::iterator it{ waiting_list.begin() }; it != waiting_list.end(); ) {
+            if ((*it).get_status() == OS_Scheduler_Simulator::Engine::Running_Process::status_type::ready) {
+                ready_list.push_back((*it));
+                it = waiting_list.erase(it);
+            }
+
+            else it = std::next(it);
+        }
+
+        if (!running.is_valid() && ready_list.size() > 0) {
+            running = ready_list.front();
+            ready_list.pop_front();
+            running.send_to_cpu();
+        }
+
+        // Adding data point.
+        current_data_point = new OS_Scheduler_Simulator::Engine::Data_Point(current_data_point->get_time_since_start() + next_event.time, waiting_list, ready_list, running);
+        timeline.push_back(current_data_point);
+    }
+
+    std::cout << "Relevant timestamps in the algorithm: ";
+    for (auto data_point : timeline) std::cout << data_point->get_time_since_start() << " ";
+    std::cout << std::endl;
+
+    // Delete all data points.
+    for (auto data_point : timeline) delete data_point;
+
+    // Breakpoint 2: Testing different methods of the Data_Point class (essential for algorithms).
 }
 #endif // _DEBUG

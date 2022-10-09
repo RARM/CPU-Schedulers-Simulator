@@ -19,7 +19,7 @@ OS_Scheduler_Simulator::Engine::Process_Data::Process_Data(std::string name, std
 #endif // _DEBUG
 }
 
-OS_Scheduler_Simulator::Engine::Running_Process::Running_Process(OS_Scheduler_Simulator::Engine::Process_Data* process) 
+OS_Scheduler_Simulator::Engine::Running_Process::Running_Process(const OS_Scheduler_Simulator::Engine::Process_Data* process) 
     : process(process), status(OS_Scheduler_Simulator::Engine::Running_Process::status_type::ready), 
     current_operation(0), time_in_current_operation(0) {}
 
@@ -45,7 +45,7 @@ OS_Scheduler_Simulator::Engine::Running_Process OS_Scheduler_Simulator::Engine::
         // Find out the status first.
         switch (this->status)
         {
-        case status_type::runnig:
+        case status_type::running:
             new_process_data.status = (this->current_operation + 1 < this->process->get_operations_size()) ? status_type::waiting : status_type::done;
             break;
 
@@ -65,9 +65,14 @@ OS_Scheduler_Simulator::Engine::Running_Process OS_Scheduler_Simulator::Engine::
         new_process_data.time_in_current_operation = 0;
     }
 
+    else if (this->time_to_end_current_burst() > time && (this->status == status_type::waiting || this->status == status_type::running)) {
+        new_process_data = (*this);
+        new_process_data.time_in_current_operation += time;
+    }
+
 #ifdef _DEBUG
     else {
-        std::cerr << "Running process \"" << this->process->get_name() << "\" was updated with a time higher than its current burst." << std::endl;
+        std::cerr << "Running process \"" << this->process->get_name() << "\" caused an unknown error in updating its state." << std::endl;
     }
 #endif // _DEBUG
 
@@ -77,12 +82,14 @@ OS_Scheduler_Simulator::Engine::Running_Process OS_Scheduler_Simulator::Engine::
 OS_Scheduler_Simulator::Engine::Data_Point::Data_Point(const std::list<Process_Data>& starting_list)
     : ready_list(), waiting_list(),
     running(OS_Scheduler_Simulator::Engine::Running_Process(nullptr)), time_since_start(0) {
-    for (Process_Data process : starting_list)
+    for (const Process_Data& process : starting_list)
         ready_list.push_back(Running_Process(&process));
 }
 
-OS_Scheduler_Simulator::Engine::Data_Point::Data_Point(unsigned time_since_start, const std::list<Running_Process>& waiting_list, const std::list<Running_Process>& ready_list, Running_Process running_process = nullptr)
+OS_Scheduler_Simulator::Engine::Data_Point::Data_Point(unsigned time_since_start, const std::list<Running_Process>& waiting_list, const std::list<Running_Process>& ready_list, Running_Process running_process)
     : time_since_start(time_since_start), waiting_list(waiting_list), ready_list(ready_list), running(running_process) {}
+    // Note that if receiving a null pointer for the running process, it will call the Running_Process constructor with null pointer as argument.
+    // If receiving an actual Running_Process for the running_process argument, then it will be called with the defaul copy constructor (not defined here).
 
 OS_Scheduler_Simulator::Engine::Data_Point::event OS_Scheduler_Simulator::Engine::Data_Point::get_next_event() {
     unsigned shortest_time{ 0 };
@@ -94,7 +101,12 @@ OS_Scheduler_Simulator::Engine::Data_Point::event OS_Scheduler_Simulator::Engine
     }
     
     if (this->waiting_list.size() > 0)
-        for (Running_Process process : this->waiting_list) {
+        if (!this->running.is_valid()) {
+            shortest_time = waiting_list.front().time_to_end_current_burst();
+            ev = event_type::io;
+        }
+        
+        for (const Running_Process& process : this->waiting_list) {
             const unsigned time = process.time_to_end_current_burst();
             if (time < shortest_time) {
                 shortest_time = time;

@@ -24,6 +24,7 @@ public:
 class OS_Scheduler_Simulator::Engine::Process_Data {
 public:
 	Process_Data(std::string name, std::span<unsigned> operations_list);
+	// Process_Data()
 	
 	std::string get_name() const { return this->name; }
 	size_t get_operations_size() const { return this->operations.size(); }
@@ -36,20 +37,20 @@ private:
 
 class OS_Scheduler_Simulator::Engine::Running_Process {
 public:
-	typedef enum { runnig, waiting, ready, done } status_type;
+	typedef enum { running, waiting, ready, done } status_type;
 
-	Running_Process(Process_Data* process);
+	Running_Process(const Process_Data* process);
 	
 	Running_Process get_next_process_state(unsigned time) const;
 	unsigned time_to_end_current_burst() const;
 	
 	status_type get_status() const { return this->status; }
 	void send_to_ready() { this->status = status_type::ready; }
-	void send_to_cpu() { this->status = status_type::runnig; }
+	void send_to_cpu() { this->status = status_type::running; }
 	bool is_valid() const { return (this->process != nullptr) ? true : false; }
 	
 private:
-	Process_Data* process;
+	const Process_Data* process;
 	status_type status;
 	size_t current_operation;
 	unsigned time_in_current_operation;
@@ -74,6 +75,7 @@ public:
 	std::list<Running_Process> get_waiting_list() const { return this->waiting_list; }
 	std::list<Running_Process> get_ready_list() const { return this->ready_list; }
 	unsigned get_time_since_start() const { return this->time_since_start; }
+	bool is_done() { return (this->ready_list.size() == 0 && this->waiting_list.size() == 0 && !this->running.is_valid()); }
 
 private:
 	std::list<Running_Process> ready_list;
