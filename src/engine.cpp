@@ -166,6 +166,8 @@ void OS_Scheduler_Simulator::Engine::Evaluator::run_evaluation() {
             previous_point = current_point;
             current_point = std::next(current_point);
         }
+
+        // FIXME: calculate turnaround and response times.
     }
 }
 
