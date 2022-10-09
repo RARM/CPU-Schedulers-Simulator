@@ -47,6 +47,7 @@ public:
 	void send_to_ready() { this->status = status_type::ready; }
 	void send_to_cpu() { this->status = status_type::running; }
 	bool is_valid() const { return (this->process != nullptr) ? true : false; }
+	std::string get_proc_name() const { return this->process->get_name(); }
 	
 private:
 	const Process_Data* process;
@@ -94,15 +95,15 @@ public:
 	
 	class Process;
 
-	Evaluator(std::list<Data_Point>* timeline = nullptr);
+	Evaluator(std::list<Process_Data>& processes, std::list<Data_Point*>* timeline = nullptr);
 
-    void run_evaluation(std::list<Data_Point>* timeline = nullptr);
+    void run_evaluation();
 	
 	results_table get_overall_totals() { return this->total_results; }
 	std::vector<Evaluator::Process> get_all_processes_data() { return this->processes_data; }
 
 private:
-	std::list<Data_Point>* timeline;
+	std::list<Data_Point*>* timeline;
 	std::vector<Evaluator::Process> processes_data;
 	results_table total_results;
 };
@@ -128,9 +129,11 @@ private:
 
 class OS_Scheduler_Simulator::Engine::Evaluator::Process {
 public:
-	Process(OS_Scheduler_Simulator::Engine::Process_Data* process);
+	Process(OS_Scheduler_Simulator::Engine::Process_Data* process = nullptr);
 
-	auto get_process_name() { this->process->get_name(); }
+	std::string get_process_name() const { return this->process->get_name(); }
+	OS_Scheduler_Simulator::Engine::Process_Data* get_process_addr() const { return this->process; }
+	void set_process_addr(OS_Scheduler_Simulator::Engine::Process_Data* proc) { this->process = proc; }
 
 	void set_total_waiting_time(unsigned val) { this->total_waiting_time = val; }
 	void set_total_turnaround_time(unsigned val) { this->total_turnaround_time = val; }
@@ -140,9 +143,9 @@ public:
 	void add_total_turnaround_time(unsigned val) { this->total_turnaround_time += val; }
 	void add_total_response_time(unsigned val) { this->total_response_time += val; }
 
-	unsigned get_total_waiting_time() { return this->total_waiting_time; }
-	unsigned get_total_turnaround_time() { return this->total_turnaround_time; }
-	unsigned get_total_response_time() { return this->total_response_time; }
+	unsigned get_total_waiting_time() const { return this->total_waiting_time; }
+	unsigned get_total_turnaround_time() const { return this->total_turnaround_time; }
+	unsigned get_total_response_time() const { return this->total_response_time; }
 
 private:
 	OS_Scheduler_Simulator::Engine::Process_Data* process;

@@ -152,9 +152,17 @@ void test_data_points() {
     for (auto data_point : timeline) std::cout << data_point->get_time_since_start() << " ";
     std::cout << std::endl;
 
+    // Breakpoint 2: Testing different methods of the Data_Point class (essential for algorithms).
+
+    // Evaluation algorithm efficiency.
+    OS_Scheduler_Simulator::Engine::Evaluator eval(starting_list, &timeline);
+
+    std::cout << "Printing all processes waiting times: " << std::endl;
+    for (OS_Scheduler_Simulator::Engine::Evaluator::Process& process : eval.get_all_processes_data()) {
+        std::cout << "- Process \"" << process.get_process_name() << "\" waiting time: " << process.get_total_waiting_time() << std::endl;
+    }
+
     // Delete all data points.
     for (auto data_point : timeline) delete data_point;
-
-    // Breakpoint 2: Testing different methods of the Data_Point class (essential for algorithms).
 }
 #endif // _DEBUG

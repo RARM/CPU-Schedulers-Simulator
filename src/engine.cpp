@@ -121,3 +121,53 @@ OS_Scheduler_Simulator::Engine::Data_Point::event OS_Scheduler_Simulator::Engine
         .time = shortest_time
     };
 }
+
+OS_Scheduler_Simulator::Engine::Evaluator::Evaluator(std::list<Process_Data>& processes, std::list<Data_Point*>* timeline)
+    : timeline(timeline), processes_data(processes.size()), total_results({0, 0, 0, 0}) {
+    unsigned i{ 0 };
+    for (Process_Data& process : processes) {
+        this->processes_data.at(i).set_process_addr(&process);
+        i++;
+    }
+
+    this->run_evaluation();
+}
+
+OS_Scheduler_Simulator::Engine::Evaluator::Process* find_process(std::vector<OS_Scheduler_Simulator::Engine::Evaluator::Process>& list_of_processes, std::string proc_name) {
+    OS_Scheduler_Simulator::Engine::Evaluator::Process* needle = nullptr;
+    
+    for (OS_Scheduler_Simulator::Engine::Evaluator::Process& process : list_of_processes) {
+        if (process.get_process_name() == proc_name) {
+            needle = &process;
+            break;
+        }
+    }
+
+    return needle;
+}
+
+void OS_Scheduler_Simulator::Engine::Evaluator::run_evaluation() {
+    if (this->timeline != nullptr) {
+        // Setup.
+        std::list<Data_Point*>::iterator previous_point = this->timeline->begin();
+        std::list<Data_Point*>::iterator current_point = std::next(previous_point);
+        std::list<Data_Point*>::iterator last_point = std::prev(this->timeline->end());
+
+        // Calculate the waiting times at every point adding them up.
+        while (current_point != last_point) {
+            unsigned diff = (* current_point)->get_time_since_start() - (* previous_point)->get_time_since_start();
+            
+            for (Running_Process& waiting_process : (* previous_point)->get_ready_list()) {
+                Process* proc_to_update = find_process(this->processes_data, waiting_process.get_proc_name());
+                if (proc_to_update != nullptr) proc_to_update->add_total_waiting_time(diff);
+            }
+
+            // The i++
+            previous_point = current_point;
+            current_point = std::next(current_point);
+        }
+    }
+}
+
+OS_Scheduler_Simulator::Engine::Evaluator::Process::Process(OS_Scheduler_Simulator::Engine::Process_Data* process)
+    : process(process), total_waiting_time(0), total_turnaround_time(0), total_response_time(0) {}
