@@ -24,7 +24,6 @@ public:
 class OS_Scheduler_Simulator::Engine::Process_Data {
 public:
 	Process_Data(std::string name, std::span<unsigned> operations_list);
-	// Process_Data()
 	
 	std::string get_name() const { return this->name; }
 	size_t get_operations_size() const { return this->operations.size(); }
@@ -111,18 +110,19 @@ private:
 class OS_Scheduler_Simulator::Engine::Simulation {
 public:
 	Simulation(std::span<Process_Data> processes);
+	~Simulation(); // Destructor needed to deallocate timeline.
 
 	Evaluator::results_table execute_algorithm(std::function<void(const std::vector<Process_Data>&, std::list<Data_Point>&)> algorithm);
 
-	Data_Point get_latest_data_point() { return this->timeline.back(); }
-	unsigned get_execution_time() { return this->timeline.back().get_time_since_start(); }
+	Data_Point get_latest_data_point() { return *this->timeline.back(); }
+	unsigned get_execution_time() { return (*this->timeline.back()).get_time_since_start(); }
 
 	Evaluator::results_table get_total_results() { return this->evaluator.get_overall_totals(); }
 	std::vector<Evaluator::Process> get_per_process_evaluation() { return this->evaluator.get_all_processes_data(); }
 
 private:
 	std::vector<Process_Data> processes;
-	std::list<Data_Point> timeline;
+	std::list<Data_Point*> timeline;
 	Evaluator evaluator;
 };
 

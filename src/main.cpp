@@ -17,7 +17,7 @@ int main(void) {
 
 #ifdef _DEBUG
     std::cout << "Running debugging version." << std::endl;
-    // test_basic_process_structures();
+    test_basic_process_structures();
     test_data_points();
 #endif // DEBUG
 
@@ -106,7 +106,6 @@ void test_data_points() {
 
     delete current_data_point;
     current_data_point = new OS_Scheduler_Simulator::Engine::Data_Point(0, waiting_list, ready_list, running);
-
     timeline.push_back(current_data_point);
 
     while (!current_data_point->is_done()) {
