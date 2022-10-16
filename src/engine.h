@@ -135,17 +135,20 @@ public:
 	OS_Scheduler_Simulator::Engine::Process_Data* get_process_addr() const { return this->process; }
 	void set_process_addr(OS_Scheduler_Simulator::Engine::Process_Data* proc) { this->process = proc; }
 
-	void set_total_waiting_time(unsigned val) { this->total_waiting_time = val; }
-	void set_total_turnaround_time(unsigned val) { this->total_turnaround_time = val; }
-
 	void add_total_waiting_time(unsigned val) { this->total_waiting_time += val; }
-	void add_total_turnaround_time(unsigned val) { this->total_turnaround_time += val; }
-
 	unsigned get_total_waiting_time() const { return this->total_waiting_time; }
-	unsigned get_total_turnaround_time() const { return this->total_turnaround_time; }
+
+	void set_turnaround_time(unsigned val) {
+		if (!this->turnaround_time_set) {
+			this->turnaround_time = val;
+			this->response_time_set = true;
+		}
+	}
+	
+	unsigned get_turnaround_time() const { return this->turnaround_time; }
 
 	void set_response_time(unsigned val) {
-		if (this->response_time_set == false) {
+		if (!this->response_time_set) {
 			this->response_time_set = true;
 			this->response_time = val;
 		}
@@ -157,7 +160,9 @@ public:
 private:
 	OS_Scheduler_Simulator::Engine::Process_Data* process;
 	unsigned total_waiting_time;
-	unsigned total_turnaround_time;
+	
+	unsigned turnaround_time;
+	bool turnaround_time_set;
 	
 	unsigned response_time;
 	bool response_time_set;

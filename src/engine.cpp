@@ -162,11 +162,17 @@ void OS_Scheduler_Simulator::Engine::Evaluator::run_evaluation() {
                 if (proc_to_update != nullptr) proc_to_update->add_total_waiting_time(diff);
             }
 
-            // Calculating turnaround time.
-            if ((*previous_point)->get_cpu_process().is_valid()) {
+            if ((*previous_point)->is_cpu_busy()) {
+                // Calculating response time.
                 Process* running_proc = find_process(this->processes_data, (*previous_point)->get_cpu_process().get_proc_name());
                 if (running_proc->is_response_set() == false)
                     running_proc->set_response_time((*previous_point)->get_time_since_start());
+
+                // Calculating turnaround time.
+                // This model assumes all processes are submitted at start.
+                Running_Process::status_type p_next_status = (*previous_point)->get_cpu_process().get_next_process_state(diff).get_status();
+                if (p_next_status == Running_Process::status_type::done)
+                    running_proc->set_turnaround_time((*current_point)->get_time_since_start());
             }
             
             // The i++
@@ -174,9 +180,11 @@ void OS_Scheduler_Simulator::Engine::Evaluator::run_evaluation() {
             current_point = std::next(current_point);
         }
 
-        // FIXME: calculate turnaround and response times.
+        // Adding turnaround for the last process.
+        Process* last_proc = find_process(this->processes_data, (*previous_point)->get_cpu_process().get_proc_name());
+        last_proc->set_turnaround_time((*current_point)->get_time_since_start());
     }
 }
 
 OS_Scheduler_Simulator::Engine::Evaluator::Process::Process(OS_Scheduler_Simulator::Engine::Process_Data* process)
-    : process(process), total_waiting_time(0), total_turnaround_time(0), response_time(0), response_time_set(false) {}
+    : process(process), total_waiting_time(0), turnaround_time(0), response_time(0), response_time_set(false), turnaround_time_set(false) {}
