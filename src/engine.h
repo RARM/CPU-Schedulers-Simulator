@@ -137,21 +137,30 @@ public:
 
 	void set_total_waiting_time(unsigned val) { this->total_waiting_time = val; }
 	void set_total_turnaround_time(unsigned val) { this->total_turnaround_time = val; }
-	void set_total_response_time(unsigned val) { this->total_response_time = val; }
 
 	void add_total_waiting_time(unsigned val) { this->total_waiting_time += val; }
 	void add_total_turnaround_time(unsigned val) { this->total_turnaround_time += val; }
-	void add_total_response_time(unsigned val) { this->total_response_time += val; }
 
 	unsigned get_total_waiting_time() const { return this->total_waiting_time; }
 	unsigned get_total_turnaround_time() const { return this->total_turnaround_time; }
-	unsigned get_total_response_time() const { return this->total_response_time; }
+
+	void set_response_time(unsigned val) {
+		if (this->response_time_set == false) {
+			this->response_time_set = true;
+			this->response_time = val;
+		}
+	}
+	
+	unsigned get_response_time() const { return this->response_time; }
+	bool is_response_set() { return this->response_time_set; }
 
 private:
 	OS_Scheduler_Simulator::Engine::Process_Data* process;
 	unsigned total_waiting_time;
 	unsigned total_turnaround_time;
-	unsigned total_response_time;
+	
+	unsigned response_time;
+	bool response_time_set;
 };
 
 #endif

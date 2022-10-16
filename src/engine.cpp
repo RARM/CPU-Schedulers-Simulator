@@ -153,8 +153,8 @@ void OS_Scheduler_Simulator::Engine::Evaluator::run_evaluation() {
         std::list<Data_Point*>::iterator current_point = std::next(previous_point);
         std::list<Data_Point*>::iterator last_point = std::prev(this->timeline->end());
 
-        // Calculate the waiting times at every point adding them up.
         while (current_point != last_point) {
+            // Calculate the waiting times at every point adding them up.
             unsigned diff = (* current_point)->get_time_since_start() - (* previous_point)->get_time_since_start();
             
             for (Running_Process& waiting_process : (* previous_point)->get_ready_list()) {
@@ -162,6 +162,13 @@ void OS_Scheduler_Simulator::Engine::Evaluator::run_evaluation() {
                 if (proc_to_update != nullptr) proc_to_update->add_total_waiting_time(diff);
             }
 
+            // Calculating turnaround time.
+            if ((*previous_point)->get_cpu_process().is_valid()) {
+                Process* running_proc = find_process(this->processes_data, (*previous_point)->get_cpu_process().get_proc_name());
+                if (running_proc->is_response_set() == false)
+                    running_proc->set_response_time((*previous_point)->get_time_since_start());
+            }
+            
             // The i++
             previous_point = current_point;
             current_point = std::next(current_point);
@@ -172,4 +179,4 @@ void OS_Scheduler_Simulator::Engine::Evaluator::run_evaluation() {
 }
 
 OS_Scheduler_Simulator::Engine::Evaluator::Process::Process(OS_Scheduler_Simulator::Engine::Process_Data* process)
-    : process(process), total_waiting_time(0), total_turnaround_time(0), total_response_time(0) {}
+    : process(process), total_waiting_time(0), total_turnaround_time(0), response_time(0), response_time_set(false) {}

@@ -76,6 +76,7 @@ void test_basic_process_structures() {
     // Third breakpoint for debugging. INFO: Testing one iteration in a FCFS algorithm fashion.
 }
 
+// Demonstration of the FCFS algorithm.
 void test_data_points() {
     std::list<OS_Scheduler_Simulator::Engine::Process_Data> starting_list;
 
@@ -160,6 +161,7 @@ void test_data_points() {
     std::cout << "Printing all processes waiting times: " << std::endl;
     for (OS_Scheduler_Simulator::Engine::Evaluator::Process& process : eval.get_all_processes_data()) {
         std::cout << "- Process \"" << process.get_process_name() << "\" waiting time: " << process.get_total_waiting_time() << std::endl;
+        std::cout << "- Process \"" << process.get_process_name() << "\" response time: " << process.get_response_time() << std::endl;
     }
 
     // Delete all data points.
