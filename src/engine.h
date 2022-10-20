@@ -7,11 +7,17 @@
 #include <functional>
 #include <span>
 
+/// <summary>
+/// Representation of the whole system. FIXME: This class must be further developed for integration with the web interface.
+/// </summary>
 class OS_Scheduler_Simulator {
 public:
 	class Engine;
 };
 
+/// <summary>
+/// FIXME: Add documentation here.
+/// </summary>
 class OS_Scheduler_Simulator::Engine {
 public:
 	class Process_Data;
@@ -21,12 +27,24 @@ public:
 	class Evaluator;
 };
 
+/// <summary>
+/// The Process_Data represents the raw information of a process in the simulation. It does not contain information on how the process is being executed.
+/// </summary>
 class OS_Scheduler_Simulator::Engine::Process_Data {
 public:
 	Process_Data(std::string name, std::span<unsigned> operations_list);
 	
+	/// <summary>Get the name of the process.</summary>
+	/// <returns>Name of the process.</returns>
 	std::string get_name() const { return this->name; }
+	
+	/// <summary>Get the total number of operation registered for this process.</summary>
+	/// <returns>Total number CPU and I/O bursts.</returns>
 	size_t get_operations_size() const { return this->operations.size(); }
+	
+	/// <summary>Get the total time of an operation given an index.</summary>
+	/// <param name="i">- The operation to retrieve. Odd if it is a CPU burst, or even if it is an I/O burst.</param>
+	/// <returns>The duration of the burst.</returns>
 	unsigned get_operation(size_t i) const { return this->operations.at(i); }
 
 private:

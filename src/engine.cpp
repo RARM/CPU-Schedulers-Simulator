@@ -10,6 +10,11 @@
 #include <iostream>
 #endif // _DEBUG
 
+/// <summary>
+/// Process_Data constructor.
+/// </summary>
+/// <param name="name">- Name of the process.</param>
+/// <param name="operations_list">- List of unsigned numbers representing the CPU and I/O bursts.</param>
 OS_Scheduler_Simulator::Engine::Process_Data::Process_Data(std::string name, std::span<unsigned> operations_list) 
     : name(name), operations(operations_list.size()) {
     for (unsigned i{ 0 }; i < operations_list.size(); i++) this->operations.at(i) = operations_list[i];
