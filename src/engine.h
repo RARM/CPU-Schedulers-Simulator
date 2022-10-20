@@ -113,7 +113,8 @@ public:
 	
 	class Process;
 
-	Evaluator(std::list<Process_Data>& processes, std::list<Data_Point*>* timeline = nullptr);
+	Evaluator(std::list<Process_Data>& processes, std::list<Data_Point*>* timeline = nullptr); // Used mostly during testing.
+	Evaluator(std::vector<Process_Data>& processes, std::list<Data_Point*>* timeline = nullptr);
 
     void run_evaluation();
 	
@@ -128,21 +129,24 @@ private:
 
 class OS_Scheduler_Simulator::Engine::Simulation {
 public:
-	Simulation(std::span<Process_Data> processes);
-	~Simulation(); // Destructor needed to deallocate timeline.
+	Simulation(const std::span<Process_Data>& processes);
+	~Simulation(); // Destructor needed to deallocate the timeline.
 
-	Evaluator::results_table execute_algorithm(std::function<void(const std::vector<Process_Data>&, std::list<Data_Point>&)> algorithm);
+	void register_algorithm(std::string name, std::function<void(const std::vector<Process_Data>&, std::list<Data_Point>&)> algorithm);
+	Evaluator::results_table execute_algorithm(std::string name);
 
 	Data_Point get_latest_data_point() { return *this->timeline.back(); }
 	unsigned get_execution_time() { return (*this->timeline.back()).get_time_since_start(); }
 
-	Evaluator::results_table get_total_results() { return this->evaluator.get_overall_totals(); }
-	std::vector<Evaluator::Process> get_per_process_evaluation() { return this->evaluator.get_all_processes_data(); }
+	Evaluator::results_table get_total_results() { return this->evaluator->get_overall_totals(); }
+	std::vector<Evaluator::Process> get_per_process_evaluation() { return this->evaluator->get_all_processes_data(); }
 
 private:
 	std::vector<Process_Data> processes;
 	std::list<Data_Point*> timeline;
-	Evaluator evaluator;
+	Evaluator* evaluator;
+
+	std::list<std::pair<std::string, std::function<void(const std::vector<Process_Data>&, std::list<Data_Point>&)>>> algorithms;
 };
 
 class OS_Scheduler_Simulator::Engine::Evaluator::Process {

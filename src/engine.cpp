@@ -138,6 +138,14 @@ OS_Scheduler_Simulator::Engine::Evaluator::Evaluator(std::list<Process_Data>& pr
     this->run_evaluation();
 }
 
+OS_Scheduler_Simulator::Engine::Evaluator::Evaluator(std::vector<Process_Data>& processes, std::list<Data_Point*>* timeline)
+    : timeline(timeline), processes_data(processes.size()), total_results({ 0, 0, 0, 0 }) {
+    for (unsigned i{ 0 }; i < processes.size(); i++)
+        this->processes_data.at(i).set_process_addr(&processes.at(i));
+
+    this->run_evaluation();
+}
+
 OS_Scheduler_Simulator::Engine::Evaluator::Process* find_process(std::vector<OS_Scheduler_Simulator::Engine::Evaluator::Process>& list_of_processes, std::string proc_name) {
     OS_Scheduler_Simulator::Engine::Evaluator::Process* needle = nullptr;
     
@@ -193,3 +201,34 @@ void OS_Scheduler_Simulator::Engine::Evaluator::run_evaluation() {
 
 OS_Scheduler_Simulator::Engine::Evaluator::Process::Process(OS_Scheduler_Simulator::Engine::Process_Data* process)
     : process(process), total_waiting_time(0), turnaround_time(0), response_time(0), response_time_set(false), turnaround_time_set(false) {}
+
+OS_Scheduler_Simulator::Engine::Simulation::Simulation(const std::span<Process_Data>& processes)
+    : processes(), evaluator(nullptr) {
+    for (unsigned i{ 0 }; i < processes.size(); i++)
+        this->processes.push_back(processes[i]);
+
+    this->processes.shrink_to_fit();
+    this->evaluator = new Evaluator(this->processes, &this->timeline);
+}
+
+OS_Scheduler_Simulator::Engine::Simulation::~Simulation() {
+    delete this->evaluator;
+
+    for (Data_Point* data_point : this->timeline)
+        delete data_point;
+}
+
+void OS_Scheduler_Simulator::Engine::Simulation::register_algorithm(std::string name, std::function<void(const std::vector<Process_Data>&, std::list<Data_Point>&)> algorithm) {
+    bool algorithm_exists = false;
+
+    for (const auto& [alg_name, func]: this->algorithms)
+        if (alg_name == name) {
+            algorithm_exists = true;
+            break;
+        }
+    
+    if (!algorithm_exists)
+        this->algorithms.push_back(std::pair(name, algorithm));
+
+    // NOTE: For future refactoring. Could the list be changed to vector, be sorted, and improve checking time?
+}
