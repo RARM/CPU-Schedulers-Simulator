@@ -67,12 +67,17 @@ public:
 	void send_to_cpu() { this->status = status_type::running; }
 	bool is_valid() const { return (this->process != nullptr) ? true : false; }
 	std::string get_proc_name() const { return this->process->get_name(); }
+
+	void set_level(unsigned level) { this->level = level; }
+	unsigned get_level() const { return this->level; }
 	
 private:
 	const Process_Data* process;
 	status_type status;
 	size_t current_operation;
 	unsigned time_in_current_operation;
+	
+	unsigned level;
 };
 
 class OS_Scheduler_Simulator::Engine::Data_Point {
@@ -142,6 +147,8 @@ public:
 
 	Evaluator::results_table get_total_results() { return this->evaluator->get_overall_totals(); }
 	std::vector<Evaluator::Process> get_per_process_evaluation() { return this->evaluator->get_all_processes_data(); }
+
+	Data_Point get_data_at(unsigned time);
 
 private:
 	std::vector<Process_Data> processes;

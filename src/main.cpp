@@ -7,6 +7,7 @@
 #if defined (_REPORT_MODE) // This is the main function used for the report (FAU OS class assignment).
 
 void print_results(OS_Scheduler_Simulator::Engine::Simulation& simulator);
+void print_data_point(const OS_Scheduler_Simulator::Engine::Data_Point& data_point, unsigned time, bool print_level = false);
 
 int main(void) {
     // Processes for this simulation.
@@ -46,15 +47,35 @@ int main(void) {
     // Printing peformance results.
     print_results(sim);
 
+    // Getting and printing example of dynamic execution.
+    unsigned time{ 20 };
+    print_data_point(sim.get_data_at(time), time);
+
+    time = 110;
+    print_data_point(sim.get_data_at(time), time);
+
     // Running SJF.
     std::cout << "Running SJF algorithm." << std::endl;
     sim.execute_algorithm("SJF");
     print_results(sim);
 
+    // Dynamic execution.
+    time = 43;
+    print_data_point(sim.get_data_at(time), time);
+
+    time = 90;
+    print_data_point(sim.get_data_at(time), time);
+
     // Running MLFQ.
     std::cout << "Running MLFQ algorithm." << std::endl;
     sim.execute_algorithm("MLFQ");
     print_results(sim);
+
+    time = 37;
+    print_data_point(sim.get_data_at(time), time, true);
+
+    time = 120;
+    print_data_point(sim.get_data_at(time), time, true);
 }
 
 void print_results(OS_Scheduler_Simulator::Engine::Simulation& simulator) {
@@ -76,19 +97,42 @@ void print_results(OS_Scheduler_Simulator::Engine::Simulation& simulator) {
     std::cout << "\nTotal CPU utilization: " << overall_results.cpu_utilization * 100 << "%\n\n" << std::endl;
 }
 
+void print_data_point(const OS_Scheduler_Simulator::Engine::Data_Point& data_point, unsigned time, bool print_level) {
+    std::cout << "Information of processes at time " << time << ":" << std::endl;
+
+    // Processes
+    std::cout << "\t- Running: " << data_point.get_cpu_process().get_proc_name() << "\n" << std::endl;
+
+    // IO operations
+    std::cout << "\t- Items in the OI list: " << std::endl;
+    for (const auto& proc : data_point.get_waiting_list())
+        std::cout << "\t\t+ " << proc.get_proc_name() << std::endl;
+
+    // Ready list
+    std::cout << "\n\t- Ready queue:" << std::endl;
+    for (const auto& proc : data_point.get_ready_list())
+        if (print_level) std::cout << "\t\t+ " << proc.get_proc_name() << " - Level: " << proc.get_level() << std::endl;
+        else std::cout << "\t\t+ " << proc.get_proc_name() << std::endl;
+
+    std::cout << "\n" << std::endl;
+}
+
 #elif defined (_DEBUG)
 void test_basic_process_structures();
 void test_data_points();
 void test_simulator();
 void testing_mlfq();
+void testing_mlfq2();
 
+void print_data_point(const OS_Scheduler_Simulator::Engine::Data_Point& data_point, unsigned time, bool print_level = false);
 
 int main(void) {
     std::cout << "Running debugging version." << std::endl;
     // test_basic_process_structures();
     // test_data_points();
     // test_simulator();
-    testing_mlfq();
+    // testing_mlfq();
+    testing_mlfq2();
 
     return 0;
 }
@@ -273,6 +317,9 @@ void test_simulator() {
     // Printing peformance results.
     print_results(sim);
 
+    print_data_point(sim.get_data_at(10), 10);
+    print_data_point(sim.get_data_at(26), 26);
+
     // Running SJF.
     std::cout << "Running SJF algorithm." << std::endl;
     sim.execute_algorithm("SJF");
@@ -323,6 +370,51 @@ void testing_mlfq() {
     std::cout << "Running MLFQ algorithm." << std::endl;
     sim.execute_algorithm("MLFQ");
     print_results(sim);
+}
+
+void testing_mlfq2() {
+    // Creating four processes.
+    std::vector<OS_Scheduler_Simulator::Engine::Process_Data> processes;
+
+    std::vector<unsigned> bursts = { 6, 17, 14 };
+    processes.push_back(OS_Scheduler_Simulator::Engine::Process_Data("P1", bursts));
+
+    bursts = { 23, 7, 7 };
+    processes.push_back(OS_Scheduler_Simulator::Engine::Process_Data("P2", bursts));
+
+    bursts = { 29, 9, 13 };
+    processes.push_back(OS_Scheduler_Simulator::Engine::Process_Data("P3", bursts));
+
+    // Testing the simulator.
+    OS_Scheduler_Simulator::Engine::Simulation sim(processes);
+
+    // Running MLFQ.
+    std::cout << "Running MLFQ algorithm." << std::endl;
+    sim.execute_algorithm("MLFQ");
+    print_results(sim);
+
+    print_data_point(sim.get_data_at(15), 15, true);
+    print_data_point(sim.get_data_at(66), 66, true);
+}
+
+void print_data_point(const OS_Scheduler_Simulator::Engine::Data_Point& data_point, unsigned time, bool print_level) {
+    std::cout << "Information of processes at time " << time << ":" << std::endl;
+
+    // Processes
+    std::cout << "\t- Running: " << data_point.get_cpu_process().get_proc_name() << "\n" << std::endl;
+
+    // IO operations
+    std::cout << "\t- Items in the OI list: " << std::endl;
+    for (const auto& proc : data_point.get_waiting_list())
+        std::cout << "\t\t+ " << proc.get_proc_name() << std::endl;
+
+    // Ready list
+    std::cout << "\n\t- Ready queue:" << std::endl;
+    for (const auto& proc : data_point.get_ready_list())
+        if (print_level) std::cout << "\t\t+ " << proc.get_proc_name() << " - Level: " << proc.get_level() << std::endl;
+        else std::cout << "\t\t+ " << proc.get_proc_name() << std::endl;
+
+    std::cout << "\n" << std::endl;
 }
 
 #endif

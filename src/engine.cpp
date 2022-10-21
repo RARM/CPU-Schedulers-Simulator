@@ -291,6 +291,18 @@ OS_Scheduler_Simulator::Engine::Evaluator::results_table OS_Scheduler_Simulator:
     return this->evaluator->get_overall_totals();
 }
 
+OS_Scheduler_Simulator::Engine::Data_Point OS_Scheduler_Simulator::Engine::Simulation::get_data_at(unsigned time) {
+    for (std::list<Data_Point*>::iterator it{ this->timeline.begin() }; it != this->timeline.end(); it = std::next(it)) {
+        if ((*it)->get_time_since_start() > time) {
+            return *(* std::prev(it));
+            break;
+        }
+    }
+    
+    // if (time == this->timeline.back()->get_time_since_start()) 
+    return *(this->timeline.back());
+}
+
 /// <summary>
 /// First Come, First Serve scheduling algorithm.
 /// </summary>
@@ -453,8 +465,11 @@ void OS_SS_Algorithms::MLFQ(const std::vector<OS_Scheduler_Simulator::Engine::Pr
     OS_Scheduler_Simulator::Engine::Running_Process running(nullptr);
 
     // Preparing the first commit.
-    for (const auto& proc : processes) // Initially adding all of them to the level 1.
-        round_robin_1.push_back(OS_Scheduler_Simulator::Engine::Running_Process(&proc));
+    for (const auto& proc : processes) { // Initially adding all of them to the level 1.
+        OS_Scheduler_Simulator::Engine::Running_Process process(&proc);
+        process.set_level(1);
+        round_robin_1.push_back(process);
+    }
     
     // Send the first process to CPU.
     running = round_robin_1.front();
@@ -537,9 +552,11 @@ void OS_SS_Algorithms::MLFQ(const std::vector<OS_Scheduler_Simulator::Engine::Pr
                 switch (level_running)
                 {
                 case levels::level_1:
+                    running.set_level(2);
                     round_robin_2.push_back(running);
                     break;
                 case levels::level_2:
+                    running.set_level(3);
                     FCFS.push_back(running);
                     break;
                 }
@@ -552,6 +569,7 @@ void OS_SS_Algorithms::MLFQ(const std::vector<OS_Scheduler_Simulator::Engine::Pr
         // Regardless of previous case, check if any I/O operations is completed.
         for (std::list<OS_Scheduler_Simulator::Engine::Running_Process>::iterator it{ IO_list.begin() }; it != IO_list.end(); ) {
             if ((*it).get_status() == OS_Scheduler_Simulator::Engine::Running_Process::status_type::ready) {
+                (*it).set_level(1);
                 round_robin_1.push_back((*it)); // Send to level 1 if done.
                 it = IO_list.erase(it);
             }
