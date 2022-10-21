@@ -528,7 +528,7 @@ void OS_SS_Algorithms::MLFQ(const std::vector<OS_Scheduler_Simulator::Engine::Pr
                 IO_list.push_back(running); // It will be performing some IO operations now.
 
             // If an even in CPU was not caused by burst completion, it must have been a quantum interruption.
-            else /* if (current_time_quantum == running.time_in_operation()) */ {
+            else if (running.get_status() != OS_Scheduler_Simulator::Engine::Running_Process::status_type::done) {
                 switch (level_running)
                 {
                 case levels::level_1:
