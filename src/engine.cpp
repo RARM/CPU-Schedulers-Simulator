@@ -91,6 +91,13 @@ OS_Scheduler_Simulator::Engine::Data_Point::Data_Point(const std::list<Process_D
         ready_list.push_back(Running_Process(&process));
 }
 
+OS_Scheduler_Simulator::Engine::Data_Point::Data_Point(const std::vector<Process_Data>& starting_list)
+    : ready_list(), waiting_list(),
+    running(OS_Scheduler_Simulator::Engine::Running_Process(nullptr)), time_since_start(0) {
+    for (const Process_Data& process : starting_list)
+        ready_list.push_back(Running_Process(&process));
+}
+
 OS_Scheduler_Simulator::Engine::Data_Point::Data_Point(unsigned time_since_start, const std::list<Running_Process>& waiting_list, const std::list<Running_Process>& ready_list, Running_Process running_process)
     : time_since_start(time_since_start), waiting_list(waiting_list), ready_list(ready_list), running(running_process) {}
     // Note that if receiving a null pointer for the running process, it will call the Running_Process constructor with null pointer as argument.
@@ -163,10 +170,10 @@ OS_Scheduler_Simulator::Engine::Evaluator::Process* find_process(std::vector<OS_
 }
 
 void OS_Scheduler_Simulator::Engine::Evaluator::run_evaluation() {
-    if (this->timeline != nullptr) {
+    if (this->timeline != nullptr && this->timeline->size() > 0) {
         // Setup.
         std::list<Data_Point*>::iterator previous_point = this->timeline->begin();
-        std::list<Data_Point*>::iterator current_point = std::next(previous_point);
+        std::list<Data_Point*>::iterator current_point = std::next(previous_point); // FIXME: Halted here!
         std::list<Data_Point*>::iterator last_point = std::prev(this->timeline->end());
 
         unsigned unused_cpu{ 0 };
@@ -235,6 +242,10 @@ OS_Scheduler_Simulator::Engine::Simulation::Simulation(const std::span<Process_D
 
     this->processes.shrink_to_fit();
     this->evaluator = new Evaluator(this->processes, &this->timeline);
+
+    // Registering default algorithms.
+    this->register_algorithm("FCFS", OS_SS_Algorithms::FCFS);
+    // FIXME: Add SJF and MLFQ.
 }
 
 OS_Scheduler_Simulator::Engine::Simulation::~Simulation() {
@@ -244,10 +255,10 @@ OS_Scheduler_Simulator::Engine::Simulation::~Simulation() {
         delete data_point;
 }
 
-void OS_Scheduler_Simulator::Engine::Simulation::register_algorithm(std::string name, std::function<void(const std::vector<Process_Data>&, std::list<Data_Point>&)> algorithm) {
+void OS_Scheduler_Simulator::Engine::Simulation::register_algorithm(std::string name, std::function<void(const std::vector<Process_Data>&, std::list<Data_Point*>&)> algorithm) {
     bool algorithm_exists = false;
 
-    for (const auto& [alg_name, func]: this->algorithms)
+    for (const auto& [alg_name, func] : this->algorithms)
         if (alg_name == name) {
             algorithm_exists = true;
             break;
@@ -257,4 +268,82 @@ void OS_Scheduler_Simulator::Engine::Simulation::register_algorithm(std::string 
         this->algorithms.push_back(std::pair(name, algorithm));
 
     // NOTE: For future refactoring. Could the list be changed to vector, be sorted, and improve checking time?
+}
+
+OS_Scheduler_Simulator::Engine::Evaluator::results_table OS_Scheduler_Simulator::Engine::Simulation::execute_algorithm(std::string name_identifier) {
+    // Clear the timeline before doing anything else.
+    for (Data_Point* data_point : this->timeline)
+        delete data_point;
+
+    this->timeline.clear();
+
+    // Run function if it exists.
+    for (const auto& [alg_name, func] : this->algorithms)
+        if (alg_name == name_identifier) {
+            func(this->processes, this->timeline);
+            this->evaluator->run_evaluation();
+        }
+
+    return this->evaluator->get_overall_totals();
+}
+
+/// <summary>
+/// First Come, First Serve scheduling algorithm.
+/// </summary>
+/// <param name="processes">- List of processes for this algorithm.</param>
+/// <param name="timeline">- Blank timeline to populate.</param>
+void OS_SS_Algorithms::FCFS(const std::vector<OS_Scheduler_Simulator::Engine::Process_Data>& processes, std::list<OS_Scheduler_Simulator::Engine::Data_Point*>& timeline) {
+    OS_Scheduler_Simulator::Engine::Data_Point* current_data_point = new OS_Scheduler_Simulator::Engine::Data_Point(processes);
+
+    // Sending the first process to the CPU before commiting to the timeline.
+    std::list<OS_Scheduler_Simulator::Engine::Running_Process> waiting_list = current_data_point->get_waiting_list();
+    std::list<OS_Scheduler_Simulator::Engine::Running_Process> ready_list = current_data_point->get_ready_list();
+    OS_Scheduler_Simulator::Engine::Running_Process running = ready_list.front();
+    
+    running.send_to_cpu();
+    ready_list.pop_front();
+
+    delete current_data_point;
+    current_data_point = new OS_Scheduler_Simulator::Engine::Data_Point(0, waiting_list, ready_list, running);
+    timeline.push_back(current_data_point);
+
+    while (!current_data_point->is_done()) {
+        ready_list = current_data_point->get_ready_list();
+        waiting_list = current_data_point->get_waiting_list();
+        running = current_data_point->get_cpu_process();
+
+        OS_Scheduler_Simulator::Engine::Data_Point::event next_event = current_data_point->get_next_event();
+
+        // Running events.
+        if (running.is_valid()) running = running.get_next_process_state(next_event.time);
+        for (OS_Scheduler_Simulator::Engine::Running_Process& process : waiting_list) process = process.get_next_process_state(next_event.time);
+
+        // Removing process from CPU if completed.
+        if (next_event.event_type == OS_Scheduler_Simulator::Engine::Data_Point::event_type::cpu) {
+            if (running.get_status() == OS_Scheduler_Simulator::Engine::Running_Process::status_type::waiting)
+                waiting_list.push_back(running); // It will be performing some IO operations now.
+
+            running = OS_Scheduler_Simulator::Engine::Running_Process(nullptr); // CPU open.
+        }
+
+        // Regardless of previous case, check if any I/O operations is completed.
+        for (std::list<OS_Scheduler_Simulator::Engine::Running_Process>::iterator it{ waiting_list.begin() }; it != waiting_list.end(); ) {
+            if ((*it).get_status() == OS_Scheduler_Simulator::Engine::Running_Process::status_type::ready) {
+                ready_list.push_back((*it));
+                it = waiting_list.erase(it);
+            }
+
+            else it = std::next(it);
+        }
+
+        if (!running.is_valid() && ready_list.size() > 0) {
+            running = ready_list.front();
+            ready_list.pop_front();
+            running.send_to_cpu();
+        }
+
+        // Adding data point.
+        current_data_point = new OS_Scheduler_Simulator::Engine::Data_Point(current_data_point->get_time_since_start() + next_event.time, waiting_list, ready_list, running);
+        timeline.push_back(current_data_point);
+    }
 }

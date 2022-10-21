@@ -84,6 +84,7 @@ public:
 	} event;
 
 	Data_Point(const std::list<Process_Data>& starting_list);
+	Data_Point(const std::vector<Process_Data>& starting_list);
 	Data_Point(unsigned time_since_start, const std::list<Running_Process>& waiting_list, const std::list<Running_Process>& ready_list, Running_Process running_process = nullptr);
 
 	event get_next_event();
@@ -132,7 +133,7 @@ public:
 	Simulation(const std::span<Process_Data>& processes);
 	~Simulation(); // Destructor needed to deallocate the timeline.
 
-	void register_algorithm(std::string name, std::function<void(const std::vector<Process_Data>&, std::list<Data_Point>&)> algorithm);
+	void register_algorithm(std::string name, std::function<void(const std::vector<Process_Data>&, std::list<Data_Point*>&)> algorithm);
 	Evaluator::results_table execute_algorithm(std::string name);
 
 	Data_Point get_latest_data_point() { return *this->timeline.back(); }
@@ -146,7 +147,7 @@ private:
 	std::list<Data_Point*> timeline;
 	Evaluator* evaluator;
 
-	std::list<std::pair<std::string, std::function<void(const std::vector<Process_Data>&, std::list<Data_Point>&)>>> algorithms;
+	std::list<std::pair<std::string, std::function<void(const std::vector<Process_Data>&, std::list<Data_Point*>&)>>> algorithms;
 };
 
 class OS_Scheduler_Simulator::Engine::Evaluator::Process {
@@ -193,9 +194,9 @@ private:
 // Algorithms.
 // This algorithms come with the engine, but others can be created and plugged into the engine.
 namespace OS_SS_Algorithms {
-	void FCFS(const std::vector<OS_Scheduler_Simulator::Engine::Process_Data>& processes, std::list<OS_Scheduler_Simulator::Engine::Data_Point>& timeline);
-	void SJF(const std::vector<OS_Scheduler_Simulator::Engine::Process_Data>& processes, std::list<OS_Scheduler_Simulator::Engine::Data_Point>& timeline);
-	void MLFQ(const std::vector<OS_Scheduler_Simulator::Engine::Process_Data>& processes, std::list<OS_Scheduler_Simulator::Engine::Data_Point>& timeline);
+	void FCFS(const std::vector<OS_Scheduler_Simulator::Engine::Process_Data>& processes, std::list<OS_Scheduler_Simulator::Engine::Data_Point*>& timeline);
+	void SJF(const std::vector<OS_Scheduler_Simulator::Engine::Process_Data>& processes, std::list<OS_Scheduler_Simulator::Engine::Data_Point*>& timeline);
+	void MLFQ(const std::vector<OS_Scheduler_Simulator::Engine::Process_Data>& processes, std::list<OS_Scheduler_Simulator::Engine::Data_Point*>& timeline);
 }
 
 #endif

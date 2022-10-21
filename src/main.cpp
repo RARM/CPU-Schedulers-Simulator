@@ -4,24 +4,71 @@
 #include <array>
 #include "engine.h"
 
-#ifdef _DEBUG
+#if defined (_REPORT_MODE) // This is the main function used for the report (FAU OS class assignment).
+
+void print_results(OS_Scheduler_Simulator::Engine::Simulation& simulator);
+
+int main(void) {
+    // Processes for this simulation.
+    std::vector<OS_Scheduler_Simulator::Engine::Process_Data> processes_list;
+
+    std::vector<unsigned> bursts = { 5, 8, 3 };
+    processes_list.push_back(OS_Scheduler_Simulator::Engine::Process_Data("P1", bursts));
+
+    bursts = { 4, 3, 5 };
+    processes_list.push_back(OS_Scheduler_Simulator::Engine::Process_Data("P2", bursts));
+
+    bursts = { 8, 1, 2 };
+    processes_list.push_back(OS_Scheduler_Simulator::Engine::Process_Data("P3", bursts));
+
+    bursts = { 3, 12, 4 };
+    processes_list.push_back(OS_Scheduler_Simulator::Engine::Process_Data("P4", bursts));
+    
+    // Testing the simulator.
+    OS_Scheduler_Simulator::Engine::Simulation sim(processes_list);
+
+    // Running FCFS.
+    sim.execute_algorithm("FCFS");
+
+    // Printing peformance results.
+    std::cout << "Running FCFS algorithm." << std::endl;
+    print_results(sim);
+
+
+}
+
+void print_results(OS_Scheduler_Simulator::Engine::Simulation& simulator) {
+    for (const auto& proc : simulator.get_per_process_evaluation()) {
+        std::cout << "Process \"" << proc.get_process_name() << "\" results:" << std::endl;
+        std::cout << "\t   Waiting time: " << proc.get_total_waiting_time() << std::endl;
+        std::cout << "\t  Response time: " << proc.get_response_time() << std::endl;
+        std::cout << "\tTurnaround time: " << proc.get_turnaround_time() << std::endl;
+    }
+
+    auto overall_results = simulator.get_total_results();
+
+    // Printing totals.
+    std::cout << "\n\nTotals:" << std::endl;
+    std::cout << "\t   Avg waiting time: " << overall_results.avg_waiting_time << std::endl;
+    std::cout << "\t  Avg response time: " << overall_results.avg_response_time << std::endl;
+    std::cout << "\tAvg turnaround time: " << overall_results.avg_turnaround_time << std::endl;
+
+    std::cout << "\nTotal CPU utilization: " << overall_results.cpu_utilization * 100 << "%\n\n" << std::endl;
+}
+
+#elif defined (_DEBUG)
 void test_basic_process_structures();
 void test_data_points();
-#endif // _DEBUG
 
 
 int main(void) {
-
-#ifdef _DEBUG
     std::cout << "Running debugging version." << std::endl;
     test_basic_process_structures();
     test_data_points();
-#endif // DEBUG
 
     return 0;
 }
 
-#ifdef _DEBUG
 void test_basic_process_structures() {
     // Creating four processes.
     std::list<OS_Scheduler_Simulator::Engine::Process_Data> processes;
@@ -40,9 +87,9 @@ void test_basic_process_structures() {
 
     // First breakpoint for debugging. INFO: Testing the Process_Data class.
     std::list<OS_Scheduler_Simulator::Engine::Process_Data>::iterator it(processes.begin());
-    
+
     // Running.
-    OS_Scheduler_Simulator::Engine::Running_Process running(&(* it));
+    OS_Scheduler_Simulator::Engine::Running_Process running(&(*it));
     running.send_to_cpu();
 
     // Ready list.
@@ -63,9 +110,9 @@ void test_basic_process_structures() {
 
     OS_Scheduler_Simulator::Engine::Running_Process temp = running.get_next_process_state(time);
     for (OS_Scheduler_Simulator::Engine::Running_Process& process : ready_list) process.get_next_process_state(time);
-    
+
     ready_list.push_back(temp);
-    
+
     running = ready_list.front();
     running.send_to_cpu();
     ready_list.pop_front();
@@ -92,7 +139,7 @@ void test_data_points() {
     OS_Scheduler_Simulator::Engine::Data_Point* current_data_point = new OS_Scheduler_Simulator::Engine::Data_Point(starting_list);
 
     // Breakpoint 1: Check if initial Data_Point is correct (everything is in the waiting_list).
-    
+
     // Demonstration of a First Come First Serve algorithm.
     std::list<OS_Scheduler_Simulator::Engine::Data_Point*> timeline;
 
@@ -112,11 +159,11 @@ void test_data_points() {
         running = current_data_point->get_cpu_process();
 
         OS_Scheduler_Simulator::Engine::Data_Point::event next_event = current_data_point->get_next_event();
-        
+
         // Running events.
         if (running.is_valid()) running = running.get_next_process_state(next_event.time);
         for (OS_Scheduler_Simulator::Engine::Running_Process& process : waiting_list) process = process.get_next_process_state(next_event.time);
-        
+
         // Removing process from CPU if completed.
         if (next_event.event_type == OS_Scheduler_Simulator::Engine::Data_Point::event_type::cpu) {
             if (running.get_status() == OS_Scheduler_Simulator::Engine::Running_Process::status_type::waiting)
@@ -173,4 +220,5 @@ void test_data_points() {
     // Delete all data points.
     for (auto data_point : timeline) delete data_point;
 }
-#endif // _DEBUG
+
+#endif
