@@ -4,9 +4,6 @@
 #include <array>
 #include "engine.h"
 
-// SECTION: Algorithms (FCFS, SJF, MLFQ).
-// std::list<OS_Scheduler_Simulator::Engine::Data_Time_Point> algorithm_FCFS(std::list<OS_Scheduler_Simulator::Engine::Process> data);
-
 #ifdef _DEBUG
 void test_basic_process_structures();
 void test_data_points();

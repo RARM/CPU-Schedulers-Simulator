@@ -76,7 +76,7 @@ private:
 
 class OS_Scheduler_Simulator::Engine::Data_Point {
 public:
-	typedef enum { cpu, io, done } event_type;
+	typedef enum { cpu, io, done, unresolved } event_type;
 	
 	typedef struct {
 		event_type event_type;
@@ -189,5 +189,13 @@ private:
 	unsigned response_time;
 	bool response_time_set;
 };
+
+// Algorithms.
+// This algorithms come with the engine, but others can be created and plugged into the engine.
+namespace OS_SS_Algorithms {
+	void FCFS(const std::vector<OS_Scheduler_Simulator::Engine::Process_Data>& processes, std::list<OS_Scheduler_Simulator::Engine::Data_Point>& timeline);
+	void SJF(const std::vector<OS_Scheduler_Simulator::Engine::Process_Data>& processes, std::list<OS_Scheduler_Simulator::Engine::Data_Point>& timeline);
+	void MLFQ(const std::vector<OS_Scheduler_Simulator::Engine::Process_Data>& processes, std::list<OS_Scheduler_Simulator::Engine::Data_Point>& timeline);
+}
 
 #endif

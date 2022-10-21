@@ -100,6 +100,9 @@ OS_Scheduler_Simulator::Engine::Data_Point::event OS_Scheduler_Simulator::Engine
     unsigned shortest_time{ 0 };
     event_type ev;
 
+    // Defaults
+    ev = event_type::unresolved; // FIXME: This was done to clear the "uninitialize memory 'ev'" warning, but it must be reviewed to see its effect on the rest of the engine.
+
     if (this->running.is_valid()) { 
         shortest_time = this->running.time_to_end_current_burst();
         ev = event_type::cpu;
