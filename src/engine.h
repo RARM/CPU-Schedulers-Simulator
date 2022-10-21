@@ -179,7 +179,16 @@ public:
 	}
 	
 	unsigned get_response_time() const { return this->response_time; }
+
 	bool is_response_set() { return this->response_time_set; }
+	void reset() {
+		this->total_waiting_time = 0;
+		this->turnaround_time = 0;
+		this->response_time = 0;
+
+		this->turnaround_time_set = false;
+		this->response_time_set = false;
+	}
 
 private:
 	OS_Scheduler_Simulator::Engine::Process_Data* process;

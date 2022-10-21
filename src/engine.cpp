@@ -170,6 +170,9 @@ OS_Scheduler_Simulator::Engine::Evaluator::Process* find_process(std::vector<OS_
 }
 
 void OS_Scheduler_Simulator::Engine::Evaluator::run_evaluation() {
+    // Clear evaluator data if any.
+    for (auto& proc : this->processes_data) proc.reset();
+
     if (this->timeline != nullptr && this->timeline->size() > 0) {
         // Setup.
         std::list<Data_Point*>::iterator previous_point = this->timeline->begin();
