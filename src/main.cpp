@@ -12,18 +12,30 @@ int main(void) {
     // Processes for this simulation.
     std::vector<OS_Scheduler_Simulator::Engine::Process_Data> processes_list;
 
-    std::vector<unsigned> bursts = { 5, 8, 3 };
+    std::vector<unsigned> bursts = { 5, 27, 3, 31, 5, 43, 4, 18, 6, 22, 4, 26, 3, 24, 4 };
     processes_list.push_back(OS_Scheduler_Simulator::Engine::Process_Data("P1", bursts));
 
-    bursts = { 4, 3, 5 };
+    bursts = { 4, 48, 5, 44, 7, 42, 12, 37, 9, 76, 4, 41, 9, 31, 7, 43, 8 };
     processes_list.push_back(OS_Scheduler_Simulator::Engine::Process_Data("P2", bursts));
 
-    bursts = { 8, 1, 2 };
+    bursts = { 8, 33, 12, 41, 18, 65, 14, 21, 4, 61, 15, 18, 14, 26, 5, 31, 6 };
     processes_list.push_back(OS_Scheduler_Simulator::Engine::Process_Data("P3", bursts));
 
-    bursts = { 3, 12, 4 };
+    bursts = { 3, 35, 4, 41, 5, 45, 3, 51, 4, 61, 5, 54, 6, 82, 5, 77, 3 };
     processes_list.push_back(OS_Scheduler_Simulator::Engine::Process_Data("P4", bursts));
     
+    bursts = { 16, 24, 17, 21, 5, 36, 16, 26, 7, 31, 13, 28, 11, 21, 6, 13, 3, 11, 4 };
+    processes_list.push_back(OS_Scheduler_Simulator::Engine::Process_Data("P5", bursts));
+
+    bursts = { 11, 22, 4, 8, 5, 10, 6, 12, 7, 14, 9, 18, 12, 24, 15, 30, 8 };
+    processes_list.push_back(OS_Scheduler_Simulator::Engine::Process_Data("P6", bursts));
+
+    bursts = { 14, 46, 17, 41, 11, 42, 15, 21, 4, 32, 7, 19, 16, 33, 10 };
+    processes_list.push_back(OS_Scheduler_Simulator::Engine::Process_Data("P7", bursts));
+
+    bursts = { 4, 14, 5, 33, 6, 51, 14, 73, 16, 87, 6 };
+    processes_list.push_back(OS_Scheduler_Simulator::Engine::Process_Data("P8", bursts));
+
     // Testing the simulator.
     OS_Scheduler_Simulator::Engine::Simulation sim(processes_list);
 
