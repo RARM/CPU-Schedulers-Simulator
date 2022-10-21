@@ -39,14 +39,17 @@ int main(void) {
     // Testing the simulator.
     OS_Scheduler_Simulator::Engine::Simulation sim(processes_list);
 
-    // Running FCFS.
-    sim.execute_algorithm("FCFS");
 
-    // Printing peformance results.
+    // Running FCFS.
     std::cout << "Running FCFS algorithm." << std::endl;
+    sim.execute_algorithm("FCFS");
+    // Printing peformance results.
     print_results(sim);
 
-
+    // Running SJF.
+    std::cout << "Running SJF algorithm." << std::endl;
+    sim.execute_algorithm("SJF");
+    print_results(sim);
 }
 
 void print_results(OS_Scheduler_Simulator::Engine::Simulation& simulator) {

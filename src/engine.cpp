@@ -173,7 +173,7 @@ void OS_Scheduler_Simulator::Engine::Evaluator::run_evaluation() {
     if (this->timeline != nullptr && this->timeline->size() > 0) {
         // Setup.
         std::list<Data_Point*>::iterator previous_point = this->timeline->begin();
-        std::list<Data_Point*>::iterator current_point = std::next(previous_point); // FIXME: Halted here!
+        std::list<Data_Point*>::iterator current_point = std::next(previous_point);
         std::list<Data_Point*>::iterator last_point = std::prev(this->timeline->end());
 
         unsigned unused_cpu{ 0 };
@@ -245,7 +245,8 @@ OS_Scheduler_Simulator::Engine::Simulation::Simulation(const std::span<Process_D
 
     // Registering default algorithms.
     this->register_algorithm("FCFS", OS_SS_Algorithms::FCFS);
-    // FIXME: Add SJF and MLFQ.
+    this->register_algorithm("SJF", OS_SS_Algorithms::SJF);
+    // FIXME: Add MLFQ.
 }
 
 OS_Scheduler_Simulator::Engine::Simulation::~Simulation() {
@@ -339,6 +340,83 @@ void OS_SS_Algorithms::FCFS(const std::vector<OS_Scheduler_Simulator::Engine::Pr
         if (!running.is_valid() && ready_list.size() > 0) {
             running = ready_list.front();
             ready_list.pop_front();
+            running.send_to_cpu();
+        }
+
+        // Adding data point.
+        current_data_point = new OS_Scheduler_Simulator::Engine::Data_Point(current_data_point->get_time_since_start() + next_event.time, waiting_list, ready_list, running);
+        timeline.push_back(current_data_point);
+    }
+}
+
+void OS_SS_Algorithms::SJF(const std::vector<OS_Scheduler_Simulator::Engine::Process_Data>& processes, std::list<OS_Scheduler_Simulator::Engine::Data_Point*>& timeline) {
+    OS_Scheduler_Simulator::Engine::Data_Point* current_data_point = new OS_Scheduler_Simulator::Engine::Data_Point(processes);
+
+    // Sending the shortest process first to the CPU before commiting to the timeline.
+    std::list<OS_Scheduler_Simulator::Engine::Running_Process> waiting_list = current_data_point->get_waiting_list();
+    std::list<OS_Scheduler_Simulator::Engine::Running_Process> ready_list = current_data_point->get_ready_list();
+
+    // Get the shortest job in the ready list.
+    auto shortest = [&ready_list]() -> std::list<OS_Scheduler_Simulator::Engine::Running_Process>::const_iterator {
+        std::list<OS_Scheduler_Simulator::Engine::Running_Process>::const_iterator shortest_job = ready_list.begin();
+
+        for (auto it{ ready_list.begin() }; it != ready_list.end(); it = std::next(it))
+            if (it->time_to_end_current_burst() < shortest_job->time_to_end_current_burst())
+                shortest_job = it;
+
+        return shortest_job;
+    };
+
+    // Send the shortest job to the CPU.
+    std::list<OS_Scheduler_Simulator::Engine::Running_Process>::const_iterator temp = shortest();
+    OS_Scheduler_Simulator::Engine::Running_Process running = *temp;
+    ready_list.erase(temp);
+
+    running.send_to_cpu();
+
+    // Commit to timeline.
+    delete current_data_point;
+    current_data_point = new OS_Scheduler_Simulator::Engine::Data_Point(0, waiting_list, ready_list, running);
+    timeline.push_back(current_data_point);
+
+    // Start loop for the timeline.
+    while (!current_data_point->is_done()) {
+        // Update lists.
+        ready_list = current_data_point->get_ready_list();
+        waiting_list = current_data_point->get_waiting_list();
+        running = current_data_point->get_cpu_process();
+
+        // Get next event.
+        OS_Scheduler_Simulator::Engine::Data_Point::event next_event = current_data_point->get_next_event();
+
+        // Running processes.
+        if (running.is_valid()) running = running.get_next_process_state(next_event.time);
+        for (OS_Scheduler_Simulator::Engine::Running_Process& process : waiting_list) process = process.get_next_process_state(next_event.time);
+
+        // Removing process from CPU if completed.
+        if (next_event.event_type == OS_Scheduler_Simulator::Engine::Data_Point::event_type::cpu) {
+            if (running.get_status() == OS_Scheduler_Simulator::Engine::Running_Process::status_type::waiting)
+                waiting_list.push_back(running); // It will be performing some IO operations now.
+
+            running = OS_Scheduler_Simulator::Engine::Running_Process(nullptr); // CPU open.
+        }
+
+        // Regardless of previous case, check if any I/O operations is completed.
+        for (std::list<OS_Scheduler_Simulator::Engine::Running_Process>::iterator it{ waiting_list.begin() }; it != waiting_list.end(); ) {
+            if ((*it).get_status() == OS_Scheduler_Simulator::Engine::Running_Process::status_type::ready) {
+                ready_list.push_back((*it));
+                it = waiting_list.erase(it);
+            }
+
+            else it = std::next(it);
+        }
+
+        if (!running.is_valid() && ready_list.size() > 0) {
+            // Getting the next shortest job first if CPU is open.
+            temp = shortest();
+            running = *temp;
+            ready_list.erase(temp);
+
             running.send_to_cpu();
         }
 
