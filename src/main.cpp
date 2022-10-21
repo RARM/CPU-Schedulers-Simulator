@@ -50,6 +50,11 @@ int main(void) {
     std::cout << "Running SJF algorithm." << std::endl;
     sim.execute_algorithm("SJF");
     print_results(sim);
+
+    // Running MLFQ.
+    std::cout << "Running MLFQ algorithm." << std::endl;
+    sim.execute_algorithm("MLFQ");
+    print_results(sim);
 }
 
 void print_results(OS_Scheduler_Simulator::Engine::Simulation& simulator) {
@@ -74,12 +79,14 @@ void print_results(OS_Scheduler_Simulator::Engine::Simulation& simulator) {
 #elif defined (_DEBUG)
 void test_basic_process_structures();
 void test_data_points();
+void test_simulator();
 
 
 int main(void) {
     std::cout << "Running debugging version." << std::endl;
-    test_basic_process_structures();
-    test_data_points();
+    // test_basic_process_structures();
+    // test_data_points();
+    test_simulator();
 
     return 0;
 }
@@ -234,6 +241,64 @@ void test_data_points() {
 
     // Delete all data points.
     for (auto data_point : timeline) delete data_point;
+}
+
+void print_results(OS_Scheduler_Simulator::Engine::Simulation& simulator);
+
+void test_simulator() {
+    // Creating four processes.
+    std::vector<OS_Scheduler_Simulator::Engine::Process_Data> processes;
+
+    std::vector<unsigned> bursts = { 5, 8, 3 };
+    processes.push_back(OS_Scheduler_Simulator::Engine::Process_Data("P1", bursts));
+
+    bursts = { 4, 3, 5 };
+    processes.push_back(OS_Scheduler_Simulator::Engine::Process_Data("P2", bursts));
+
+    bursts = { 8, 1, 2 };
+    processes.push_back(OS_Scheduler_Simulator::Engine::Process_Data("P3", bursts));
+
+    bursts = { 3, 12, 4 };
+    processes.push_back(OS_Scheduler_Simulator::Engine::Process_Data("P4", bursts));
+
+    // Testing the simulator.
+    OS_Scheduler_Simulator::Engine::Simulation sim(processes);
+
+
+    // Running FCFS.
+    std::cout << "Running FCFS algorithm." << std::endl;
+    sim.execute_algorithm("FCFS");
+    // Printing peformance results.
+    print_results(sim);
+
+    // Running SJF.
+    std::cout << "Running SJF algorithm." << std::endl;
+    sim.execute_algorithm("SJF");
+    print_results(sim);
+
+    // Running MLFQ.
+    std::cout << "Running MLFQ algorithm." << std::endl;
+    sim.execute_algorithm("MLFQ");
+    print_results(sim);
+}
+
+void print_results(OS_Scheduler_Simulator::Engine::Simulation& simulator) {
+    for (const auto& proc : simulator.get_per_process_evaluation()) {
+        std::cout << "Process \"" << proc.get_process_name() << "\" results:" << std::endl;
+        std::cout << "\t   Waiting time: " << proc.get_total_waiting_time() << std::endl;
+        std::cout << "\t  Response time: " << proc.get_response_time() << std::endl;
+        std::cout << "\tTurnaround time: " << proc.get_turnaround_time() << std::endl;
+    }
+
+    auto overall_results = simulator.get_total_results();
+
+    // Printing totals.
+    std::cout << "\n\nTotals:" << std::endl;
+    std::cout << "\t   Avg waiting time: " << overall_results.avg_waiting_time << std::endl;
+    std::cout << "\t  Avg response time: " << overall_results.avg_response_time << std::endl;
+    std::cout << "\tAvg turnaround time: " << overall_results.avg_turnaround_time << std::endl;
+
+    std::cout << "\nTotal CPU utilization: " << overall_results.cpu_utilization * 100 << "%\n\n" << std::endl;
 }
 
 #endif

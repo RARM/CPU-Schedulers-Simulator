@@ -60,6 +60,7 @@ public:
 	
 	Running_Process get_next_process_state(unsigned time) const;
 	unsigned time_to_end_current_burst() const;
+	unsigned time_in_operation() const { return this->time_in_current_operation; };
 	
 	status_type get_status() const { return this->status; }
 	void send_to_ready() { this->status = status_type::ready; }

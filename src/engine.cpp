@@ -246,7 +246,7 @@ OS_Scheduler_Simulator::Engine::Simulation::Simulation(const std::span<Process_D
     // Registering default algorithms.
     this->register_algorithm("FCFS", OS_SS_Algorithms::FCFS);
     this->register_algorithm("SJF", OS_SS_Algorithms::SJF);
-    // FIXME: Add MLFQ.
+    this->register_algorithm("MLFQ", OS_SS_Algorithms::MLFQ);
 }
 
 OS_Scheduler_Simulator::Engine::Simulation::~Simulation() {
@@ -349,6 +349,11 @@ void OS_SS_Algorithms::FCFS(const std::vector<OS_Scheduler_Simulator::Engine::Pr
     }
 }
 
+/// <summary>
+/// Shortest Job First algorithm. Note: This algorithm could not be implemented in real life because the scheduler would need to know the CPU bursts beforehand; however, the ASJF is a real world implementation of this algorithm.
+/// </summary>
+/// <param name="processes">- List of processes for this algorithm.</param>
+/// <param name="timeline">- Blank timeline to populate.</param>
 void OS_SS_Algorithms::SJF(const std::vector<OS_Scheduler_Simulator::Engine::Process_Data>& processes, std::list<OS_Scheduler_Simulator::Engine::Data_Point*>& timeline) {
     OS_Scheduler_Simulator::Engine::Data_Point* current_data_point = new OS_Scheduler_Simulator::Engine::Data_Point(processes);
 
@@ -422,6 +427,155 @@ void OS_SS_Algorithms::SJF(const std::vector<OS_Scheduler_Simulator::Engine::Pro
 
         // Adding data point.
         current_data_point = new OS_Scheduler_Simulator::Engine::Data_Point(current_data_point->get_time_since_start() + next_event.time, waiting_list, ready_list, running);
+        timeline.push_back(current_data_point);
+    }
+}
+
+/// <summary>
+/// This Implementation of MLFQ has three levels.
+/// 
+/// - First level uses Round Robin with time quantum = 5.
+/// - Second level uses Round Robin with time quantum = 10.
+/// - Third level uses Round Robin with time quantum = 10.
+/// </summary>
+/// <param name="processes">- List of processes for this algorithm.</param>
+/// <param name="timeline">- Blank timeline to populate.</param>
+void OS_SS_Algorithms::MLFQ(const std::vector<OS_Scheduler_Simulator::Engine::Process_Data>& processes, std::list<OS_Scheduler_Simulator::Engine::Data_Point*>& timeline) {
+    // All the ready queues.
+    std::list<OS_Scheduler_Simulator::Engine::Running_Process> round_robin_1;
+    std::list<OS_Scheduler_Simulator::Engine::Running_Process> round_robin_2;
+    std::list<OS_Scheduler_Simulator::Engine::Running_Process> FCFS;
+    
+    std::list<OS_Scheduler_Simulator::Engine::Running_Process> IO_list; // waiting_list in other algorithms here.
+    OS_Scheduler_Simulator::Engine::Running_Process running(nullptr);
+
+    // Preparing the first commit.
+    for (const auto& proc : processes) // Initially adding all of them to the level 1.
+        round_robin_1.push_back(OS_Scheduler_Simulator::Engine::Running_Process(&proc));
+    
+    // Send the first process to CPU.
+    running = round_robin_1.front();
+    round_robin_1.pop_front();
+    running.send_to_cpu();
+
+    // What level is running?
+    enum levels { level_1, level_2, level_3 };
+    levels level_running = levels::level_1;
+
+    auto get_time_quantum = [](levels level) -> unsigned {
+        unsigned time;
+        switch (level)
+        {
+        case levels::level_1:
+            time = 5;
+            break;
+        case levels::level_2:
+            time = 10;
+            break;
+        case levels::level_3: // FCFS has no time quantum.
+        default:
+            time = 0;
+            break;
+        }
+
+        return time;
+    };
+
+    // Function to combine all queues to one for easy commit.
+    // This could be improved by changing the architecture of a Data_Point to hold multiple ready_queues (optimization for MLFQ).
+    auto prepare_ready_queue = [](
+            const std::list<OS_Scheduler_Simulator::Engine::Running_Process>& round_robin_1, 
+            const std::list<OS_Scheduler_Simulator::Engine::Running_Process>& round_robin_2,
+            const std::list<OS_Scheduler_Simulator::Engine::Running_Process>& FCFS
+        ) -> std::list<OS_Scheduler_Simulator::Engine::Running_Process> {
+        std::list<OS_Scheduler_Simulator::Engine::Running_Process> ready_queue;
+        ready_queue.insert(ready_queue.end(), round_robin_1.begin(), round_robin_1.end());
+        ready_queue.insert(ready_queue.end(), round_robin_2.begin(), round_robin_2.end());
+        ready_queue.insert(ready_queue.end(), FCFS.begin(),    FCFS.end());
+        return ready_queue;
+    };
+
+    // First commit to the timeline.
+    OS_Scheduler_Simulator::Engine::Data_Point* current_data_point = new OS_Scheduler_Simulator::Engine::Data_Point(0, IO_list, prepare_ready_queue(round_robin_1, round_robin_2, FCFS), running);
+    timeline.push_back(current_data_point);
+
+    // The loop.
+    while (!current_data_point->is_done()) {
+        // All lists should stay the same as in the previous iteration.
+
+        // Get the next event.
+        OS_Scheduler_Simulator::Engine::Data_Point::event next_event = current_data_point->get_next_event();
+        unsigned current_time_quantum{ 0 };
+
+        // Check if interrupted by time quantum.
+        current_time_quantum = get_time_quantum(level_running);
+        
+        if (current_data_point->is_cpu_busy() && level_running != levels::level_3 && current_time_quantum < running.time_in_operation() + next_event.time) {
+            next_event.event_type = OS_Scheduler_Simulator::Engine::Data_Point::event_type::cpu;
+            next_event.time = current_time_quantum - running.time_in_operation();
+        }
+
+        // Running processes.
+        if (running.is_valid()) running = running.get_next_process_state(next_event.time);
+        for (OS_Scheduler_Simulator::Engine::Running_Process& process : IO_list) process = process.get_next_process_state(next_event.time);
+
+        // Removing process from CPU if completed or time quantum interrupted.
+        if (next_event.event_type == OS_Scheduler_Simulator::Engine::Data_Point::event_type::cpu) {
+            if (running.get_status() == OS_Scheduler_Simulator::Engine::Running_Process::status_type::waiting)
+                IO_list.push_back(running); // It will be performing some IO operations now.
+
+            // If an even in CPU was not caused by burst completion, it must have been a quantum interruption.
+            else /* if (current_time_quantum == running.time_in_operation()) */ {
+                switch (level_running)
+                {
+                case levels::level_1:
+                    round_robin_2.push_back(running);
+                    break;
+                case levels::level_2:
+                    FCFS.push_back(running);
+                    break;
+                }
+            }
+            
+            // Removing process completely if done.
+            running = OS_Scheduler_Simulator::Engine::Running_Process(nullptr); // CPU open.
+        }
+
+        // Regardless of previous case, check if any I/O operations is completed.
+        for (std::list<OS_Scheduler_Simulator::Engine::Running_Process>::iterator it{ IO_list.begin() }; it != IO_list.end(); ) {
+            if ((*it).get_status() == OS_Scheduler_Simulator::Engine::Running_Process::status_type::ready) {
+                round_robin_1.push_back((*it)); // Send to level 1 if done.
+                it = IO_list.erase(it);
+            }
+
+            else it = std::next(it);
+        }
+
+        // Put something in the CPU if empty.
+        if (!running.is_valid() && (round_robin_1.size() > 0 || round_robin_2.size() > 0 || FCFS.size() > 0)) {
+            if (round_robin_1.size() > 0) {
+                running = round_robin_1.front();
+                round_robin_1.pop_front();
+                level_running = levels::level_1;
+            }
+
+            else if (round_robin_2.size() > 0) {
+                running = round_robin_2.front();
+                round_robin_2.pop_front();
+                level_running = levels::level_2;
+            }
+
+            else {
+                running = FCFS.front();
+                FCFS.pop_front();
+                level_running = levels::level_3;
+            }
+            
+            running.send_to_cpu();
+        }
+
+        // Commit to timeline.
+        current_data_point = new OS_Scheduler_Simulator::Engine::Data_Point(current_data_point->get_time_since_start() + next_event.time, IO_list, prepare_ready_queue(round_robin_1, round_robin_2, FCFS), running);
         timeline.push_back(current_data_point);
     }
 }
