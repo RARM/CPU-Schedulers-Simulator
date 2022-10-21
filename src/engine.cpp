@@ -166,10 +166,13 @@ void OS_Scheduler_Simulator::Engine::Evaluator::run_evaluation() {
         std::list<Data_Point*>::iterator current_point = std::next(previous_point);
         std::list<Data_Point*>::iterator last_point = std::prev(this->timeline->end());
 
+        unsigned unused_cpu{ 0 };
+
         while (current_point != last_point) {
-            // Calculate the waiting times at every point adding them up.
+            // Time for the current block.
             unsigned diff = (* current_point)->get_time_since_start() - (* previous_point)->get_time_since_start();
             
+            // Calculate the waiting times at every point adding them up.
             for (Running_Process& waiting_process : (* previous_point)->get_ready_list()) {
                 Process* proc_to_update = find_process(this->processes_data, waiting_process.get_proc_name());
                 if (proc_to_update != nullptr) proc_to_update->add_total_waiting_time(diff);
@@ -188,6 +191,10 @@ void OS_Scheduler_Simulator::Engine::Evaluator::run_evaluation() {
                     running_proc->set_turnaround_time((*current_point)->get_time_since_start());
             }
             
+            else { // Add time not being utilized.
+                unused_cpu += diff;
+            }
+            
             // The i++
             previous_point = current_point;
             current_point = std::next(current_point);
@@ -196,6 +203,22 @@ void OS_Scheduler_Simulator::Engine::Evaluator::run_evaluation() {
         // Adding turnaround for the last process.
         Process* last_proc = find_process(this->processes_data, (*previous_point)->get_cpu_process().get_proc_name());
         last_proc->set_turnaround_time((*current_point)->get_time_since_start());
+
+        // Calculate CPU utilization.
+        this->total_results.cpu_utilization = static_cast<double>((*last_point)->get_time_since_start() - unused_cpu) / static_cast<double>((*last_point)->get_time_since_start());
+
+        // Calculate averages.
+        this->total_results.avg_response_time = this->total_results.avg_turnaround_time = this->total_results.avg_waiting_time = 0;
+        
+        for (const Evaluator::Process& proc : this->processes_data) {
+            this->total_results.avg_response_time   += static_cast<double>(proc.get_response_time());
+            this->total_results.avg_turnaround_time += static_cast<double>(proc.get_turnaround_time());
+            this->total_results.avg_waiting_time    += static_cast<double>(proc.get_total_waiting_time());
+        }
+
+        this->total_results.avg_response_time   /= this->processes_data.size();
+        this->total_results.avg_turnaround_time /= this->processes_data.size();
+        this->total_results.avg_waiting_time    /= this->processes_data.size();
     }
 }
 

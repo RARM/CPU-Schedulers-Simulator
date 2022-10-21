@@ -165,6 +165,14 @@ void test_data_points() {
         std::cout << "\tTurnaround time: " << process.get_turnaround_time() << std::endl;
     }
 
+    // Printing totals.
+    std::cout << "\n\nTotals:" << std::endl;
+    std::cout << "\t   Avg waiting time: " << eval.get_overall_totals().avg_waiting_time << std::endl;
+    std::cout << "\t  Avg response time: " << eval.get_overall_totals().avg_response_time << std::endl;
+    std::cout << "\tAvg turnaround time: " << eval.get_overall_totals().avg_turnaround_time << std::endl;
+
+    std::cout << "\nTotal CPU utilization: " << eval.get_overall_totals().cpu_utilization * 100 << "%" << std::endl;
+
     // Delete all data points.
     for (auto data_point : timeline) delete data_point;
 }
