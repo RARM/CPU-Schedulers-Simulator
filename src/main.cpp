@@ -80,13 +80,15 @@ void print_results(OS_Scheduler_Simulator::Engine::Simulation& simulator) {
 void test_basic_process_structures();
 void test_data_points();
 void test_simulator();
+void testing_mlfq();
 
 
 int main(void) {
     std::cout << "Running debugging version." << std::endl;
     // test_basic_process_structures();
     // test_data_points();
-    test_simulator();
+    // test_simulator();
+    testing_mlfq();
 
     return 0;
 }
@@ -299,6 +301,28 @@ void print_results(OS_Scheduler_Simulator::Engine::Simulation& simulator) {
     std::cout << "\tAvg turnaround time: " << overall_results.avg_turnaround_time << std::endl;
 
     std::cout << "\nTotal CPU utilization: " << overall_results.cpu_utilization * 100 << "%\n\n" << std::endl;
+}
+
+void testing_mlfq() {
+    // Creating four processes.
+    std::vector<OS_Scheduler_Simulator::Engine::Process_Data> processes;
+
+    std::vector<unsigned> bursts = { 16, 24, 17 };
+    processes.push_back(OS_Scheduler_Simulator::Engine::Process_Data("P1", bursts));
+
+    bursts = { 11, 22, 4 };
+    processes.push_back(OS_Scheduler_Simulator::Engine::Process_Data("P2", bursts));
+
+    bursts = { 4, 14, 5 };
+    processes.push_back(OS_Scheduler_Simulator::Engine::Process_Data("P3", bursts));
+
+    // Testing the simulator.
+    OS_Scheduler_Simulator::Engine::Simulation sim(processes);
+
+    // Running MLFQ.
+    std::cout << "Running MLFQ algorithm." << std::endl;
+    sim.execute_algorithm("MLFQ");
+    print_results(sim);
 }
 
 #endif

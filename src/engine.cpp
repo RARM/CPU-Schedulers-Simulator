@@ -513,11 +513,16 @@ void OS_SS_Algorithms::MLFQ(const std::vector<OS_Scheduler_Simulator::Engine::Pr
         // Check if interrupted by time quantum.
         current_time_quantum = get_time_quantum(level_running);
         
-        if (current_data_point->is_cpu_busy() && level_running != levels::level_3 && current_time_quantum < running.time_in_operation() + next_event.time) {
+        if (current_data_point->is_cpu_busy() && level_running == levels::level_1 && current_time_quantum < running.time_in_operation() + next_event.time) {
             next_event.event_type = OS_Scheduler_Simulator::Engine::Data_Point::event_type::cpu;
             next_event.time = current_time_quantum - running.time_in_operation();
         }
 
+        else if (current_data_point->is_cpu_busy() && level_running == levels::level_2 && current_time_quantum < (running.time_in_operation() - get_time_quantum(levels::level_1)) + next_event.time) {
+            next_event.event_type = OS_Scheduler_Simulator::Engine::Data_Point::event_type::cpu;
+            next_event.time = current_time_quantum - (running.time_in_operation() - get_time_quantum(levels::level_1));
+        }
+        
         // Running processes.
         if (running.is_valid()) running = running.get_next_process_state(next_event.time);
         for (OS_Scheduler_Simulator::Engine::Running_Process& process : IO_list) process = process.get_next_process_state(next_event.time);
